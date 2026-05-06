@@ -18,6 +18,7 @@ app.use('/api/quy-trinh',     require('./routes/quyTrinh'));
 app.use('/api/tai-khoan',     require('./routes/taiKhoan'));
 app.use('/api/phieu-de-nghi', require('./routes/phieuDeNghi'));
 app.use('/api/qualzen',       require('./routes/qualzen'));
+app.use('/api/dongho',        require('./routes/dongho'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

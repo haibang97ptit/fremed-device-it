@@ -93,3 +93,6 @@ export default api
 // QUALZEN
 export const getActionItems = () => api.get('/qualzen/action-items')
 export const getActionItemsSummary = () => api.get('/qualzen/action-items/summary')
+
+// ĐỒNG HỒ
+export const getDongHoStatus = () => api.get('/dongho/status')
