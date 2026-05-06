@@ -1,0 +1,116 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fremed_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fremed_device
+      POSTGRES_USER: fremed
+      POSTGRES_PASSWORD: fremed@2025
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - fremed_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fremed -d fremed_device"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: fremed_migrate
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DB: fremed_device
+      PG_USER: fremed
+      PG_PASSWORD: fremed@2025
+    volumes:
+      - ./backend/src/db:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fremed_net
+    command: node migrate.js --sql /data/gagnnyox_device.sql
+    restart: "no"
+    profiles:
+      - migrate
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fremed_backend
+    restart: unless-stopped
+    cap_add:
+      - NET_RAW
+    dns:
+      - 10.1.11.7
+    dns_search:
+      - fremed.com
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://fremed:fremed@2025@postgres:5432/fremed_device
+      JWT_SECRET: fremed_secret_key_2025
+      JWT_EXPIRES_IN: 8h
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fremed_net
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fremed_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - fremed_net
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fremed_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@fremed.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - fremed_net
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+
+networks:
+  fremed_net:
+    driver: bridge
