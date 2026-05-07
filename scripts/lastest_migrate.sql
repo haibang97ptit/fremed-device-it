@@ -1,0 +1,1 @@
+ALTER TABLE quy_trinh ALTER COLUMN file_type TYPE VARCHAR(500);
