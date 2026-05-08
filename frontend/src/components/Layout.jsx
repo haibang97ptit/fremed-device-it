@@ -26,6 +26,9 @@ const SIDEBAR_NAV = [
   { to: '/action-items', label: 'Action Items', end: false,
     icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h12M2 8h12M2 13h8"/><circle cx="13" cy="13" r="2"/><path d="M12 13l1 1 2-2" strokeWidth="1.5"/></svg>
   },
+  { to: '/it-sop', label: 'IT SOP', end: false,
+    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6l-4-4z"/><path d="M9 2v4h4"/><path d="M5 9h6M5 11.5h4"/></svg>
+  },
 ]
 
 // Chỉ hiện các tab này trên header
@@ -34,6 +37,7 @@ const HEADER_TABS = [
   { to: '/tai-khoan', label: 'Tài khoản IT', end: false },
   { to: '/phieu-de-nghi', label: 'Phiếu đề nghị', end: false },
   { to: '/action-items', label: 'Action Items', end: false },
+  { to: '/it-sop', label: 'IT SOP', end: false },
 ]
 
 export default function Layout() {

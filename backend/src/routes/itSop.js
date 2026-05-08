@@ -19,19 +19,29 @@ router.get('/', auth, async (req, res) => {
         v.Status,
         v.EffectiveDate,
         v.DocumentStatus,
-        p.FilePath AS PDFPath
+        l.FilePath AS PDFPath
       FROM DMS.AizantIT_DocumentMaster m
       LEFT JOIN DMS.AizantIT_DocVersion v 
         ON m.DocumentID = v.DocumentID
       LEFT JOIN DMS.AizantIT_DocVersionTitle t 
         ON v.VersionID = t.DocTitleID
-      LEFT JOIN DMS.AizantIT_PDFDocVersionLocation p 
-        ON v.VersionID = p.DocVID
+      OUTER APPLY (
+        SELECT TOP 1 loc.FilePath
+        FROM DMS.AizantIT_DocumentLocation loc
+        WHERE loc.DocVID = v.VersionID
+          AND loc.FilePath LIKE '%.pdf'
+        ORDER BY loc.CreatedDate DESC
+      ) l
       WHERE m.DeptID = 6 
         AND m.DocumentTypeID = 4
       ORDER BY m.DocumentNumber
     `);
-    res.json(result.recordset);
+    // Gắn thêm base URL cho FilePath
+    const rows = result.recordset.map(r => ({
+      ...r,
+      PDFPath: r.PDFPath ? r.PDFPath : null
+    }));
+    res.json(rows);
   } catch (err) {
     console.error('IT SOP query error:', err);
     res.status(500).json({ message: 'Lỗi kết nối SQL Server: ' + err.message });

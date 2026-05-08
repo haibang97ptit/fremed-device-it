@@ -96,3 +96,6 @@ export const getActionItemsSummary = () => api.get('/qualzen/action-items/summar
 
 // ĐỒNG HỒ
 export const getDongHoStatus = () => api.get('/dongho/status')
+
+// IT SOP
+export const getITSop = () => api.get('/it-sop')

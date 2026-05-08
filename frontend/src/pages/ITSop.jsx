@@ -48,7 +48,7 @@ export default function ITSop() {
   function getViewerUrl(row) {
     const pdfUrl = getPdfUrl(row)
     if (!pdfUrl) return null
-    return `${QUALZEN_BASE}/Scripts/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}#toolbar=0&navpanes=0&scrollbar=0`
+    return `${QUALZEN_BASE}/Scripts/pdf.js/web/viewer.html?d=2&file=${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`
   }
 
   const filtered = rows.filter(row => {

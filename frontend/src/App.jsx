@@ -10,6 +10,7 @@ import QuyTrinhIT from './pages/QuyTrinhIT'
 import TaiKhoanIT from './pages/TaiKhoanIT'
 import PhieuDeNghi from './pages/PhieuDeNghi'
 import ActionItems from './pages/ActionItems'
+import ITSop from './pages/ITSop'
 
 function PrivateRoute({ children }) {
   const { token } = useAuth()
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="tai-khoan" element={<TaiKhoanIT />} />
             <Route path="phieu-de-nghi" element={<PhieuDeNghi />} />
             <Route path="action-items" element={<ActionItems />} />
+            <Route path="it-sop" element={<ITSop />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
