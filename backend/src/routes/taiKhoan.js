@@ -7,34 +7,56 @@ const fs     = require('fs');
 
 const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 10 * 1024 * 1024 } });
 
-// GET /api/tai-khoan
-router.get('/', auth, async (req, res) => {
-  const { search } = req.query;
-  const params = [];
-  let where = '';
-  if (search) {
-    params.push(`%${search}%`);
-    where = `WHERE thiet_bi ILIKE $1 OR tai_khoan ILIKE $1 OR ghi_chu ILIKE $1`;
-  }
+// ==================== SYSTEMS ====================
+
+// GET /api/tai-khoan/systems — lấy tất cả hệ thống + tài khoản + quy trình
+router.get('/systems', auth, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM tai_khoan_tb ${where} ORDER BY thiet_bi ASC`, params
+    const { rows: systems } = await pool.query(
+      `SELECT * FROM it_systems ORDER BY parent_id NULLS FIRST, name ASC`
     );
-    res.json(rows);
+    const { rows: accounts } = await pool.query(
+      `SELECT * FROM it_accounts ORDER BY system_id, tai_khoan`
+    );
+    const { rows: links } = await pool.query(
+      `SELECT sq.system_id, sq.id AS link_id, q.id AS quy_trinh_id, q.title, q.description, q.file_path, q.file_name
+       FROM system_quy_trinh sq
+       JOIN quy_trinh q ON sq.quy_trinh_id = q.id
+       ORDER BY sq.system_id, q.title`
+    );
+
+    // Gắn accounts + quy_trinh vào systems
+    const systemMap = {};
+    systems.forEach(s => { s.accounts = []; s.children = []; s.quy_trinh = []; systemMap[s.id] = s; });
+    accounts.forEach(a => { if (systemMap[a.system_id]) systemMap[a.system_id].accounts.push(a); });
+    links.forEach(l => { if (systemMap[l.system_id]) systemMap[l.system_id].quy_trinh.push(l); });
+
+    // Build tree
+    const roots = [];
+    systems.forEach(s => {
+      if (s.parent_id && systemMap[s.parent_id]) {
+        systemMap[s.parent_id].children.push(s);
+      } else {
+        roots.push(s);
+      }
+    });
+
+    res.json(roots);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
 
-// POST /api/tai-khoan
-router.post('/', auth, async (req, res) => {
-  const { thiet_bi, tai_khoan, mat_khau, ghi_chu } = req.body;
-  if (!thiet_bi) return res.status(400).json({ message: 'Thiếu tên thiết bị' });
+// POST /api/tai-khoan/systems
+router.post('/systems', auth, async (req, res) => {
+  const { name, type, parent_id, description, ip_address } = req.body;
+  if (!name) return res.status(400).json({ message: 'Thiếu tên hệ thống' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO tai_khoan_tb (thiet_bi, tai_khoan, mat_khau, ghi_chu) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [thiet_bi, tai_khoan || null, mat_khau || null, ghi_chu || null]
+      `INSERT INTO it_systems (name, type, parent_id, description, ip_address) 
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [name, type || 'server', parent_id || null, description || null, ip_address || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -43,14 +65,14 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/tai-khoan/:id
-router.put('/:id', auth, async (req, res) => {
-  const { thiet_bi, tai_khoan, mat_khau, ghi_chu } = req.body;
+// PUT /api/tai-khoan/systems/:id
+router.put('/systems/:id', auth, async (req, res) => {
+  const { name, type, parent_id, description, ip_address } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE tai_khoan_tb SET thiet_bi=$1, tai_khoan=$2, mat_khau=$3, ghi_chu=$4
-       WHERE id=$5 RETURNING *`,
-      [thiet_bi, tai_khoan || null, mat_khau || null, ghi_chu || null, req.params.id]
+      `UPDATE it_systems SET name=$1, type=$2, parent_id=$3, description=$4, ip_address=$5
+       WHERE id=$6 RETURNING *`,
+      [name, type, parent_id || null, description || null, ip_address || null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
     res.json(rows[0]);
@@ -60,10 +82,10 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/tai-khoan/:id
-router.delete('/:id', auth, async (req, res) => {
+// DELETE /api/tai-khoan/systems/:id
+router.delete('/systems/:id', auth, async (req, res) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM tai_khoan_tb WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM it_systems WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy' });
     res.json({ message: 'Đã xóa' });
   } catch (err) {
@@ -72,66 +94,93 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// POST /api/tai-khoan/import (CSV/Excel)
-router.post('/import', auth, upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'Thiếu file' });
+// ==================== ACCOUNTS ====================
 
+// POST /api/tai-khoan/accounts
+router.post('/accounts', auth, async (req, res) => {
+  const { system_id, tai_khoan, mat_khau, role, ghi_chu } = req.body;
+  if (!system_id || !tai_khoan) return res.status(400).json({ message: 'Thiếu thông tin' });
   try {
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    let records = [];
-
-    if (ext === '.csv') {
-      const content = fs.readFileSync(req.file.path, 'utf8');
-      const lines = content.split('\n').filter(l => l.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
-
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-        const row = {};
-        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
-        records.push(row);
-      }
-    } else if (ext === '.xlsx' || ext === '.xls') {
-      // Sử dụng xlsx library nếu có, fallback sang CSV
-      try {
-        const XLSX = require('xlsx');
-        const workbook = XLSX.readFile(req.file.path);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        records = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      } catch {
-        return res.status(400).json({ message: 'Không đọc được file Excel. Hãy thử export CSV.' });
-      }
-    } else {
-      return res.status(400).json({ message: 'Chỉ hỗ trợ .csv, .xlsx, .xls' });
-    }
-
-    // Map columns — hỗ trợ nhiều tên cột
-    let imported = 0;
-    await pool.query('BEGIN');
-    for (const r of records) {
-      const thiet_bi  = r.thiet_bi || r['thiết bị'] || r.device || r['tên thiết bị'] || '';
-      const tai_khoan = r.tai_khoan || r['tài khoản'] || r.username || r.account || '';
-      const mat_khau  = r.mat_khau || r['mật khẩu'] || r.password || '';
-      const ghi_chu   = r.ghi_chu || r['ghi chú'] || r.note || r.notes || '';
-
-      if (!thiet_bi) continue;
-
-      await pool.query(
-        `INSERT INTO tai_khoan_tb (thiet_bi, tai_khoan, mat_khau, ghi_chu) VALUES ($1,$2,$3,$4)`,
-        [thiet_bi, tai_khoan || null, mat_khau || null, ghi_chu || null]
-      );
-      imported++;
-    }
-    await pool.query('COMMIT');
-
-    // Xóa file tạm
-    fs.unlinkSync(req.file.path);
-
-    res.json({ message: `Import thành công ${imported} bản ghi`, imported });
+    const { rows } = await pool.query(
+      `INSERT INTO it_accounts (system_id, tai_khoan, mat_khau, role, ghi_chu) 
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [system_id, tai_khoan, mat_khau || null, role || 'admin', ghi_chu || null]
+    );
+    res.status(201).json(rows[0]);
   } catch (err) {
-    await pool.query('ROLLBACK');
     console.error(err);
-    res.status(500).json({ message: 'Lỗi import: ' + err.message });
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// PUT /api/tai-khoan/accounts/:id
+router.put('/accounts/:id', auth, async (req, res) => {
+  const { tai_khoan, mat_khau, role, ghi_chu } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE it_accounts SET tai_khoan=$1, mat_khau=$2, role=$3, ghi_chu=$4
+       WHERE id=$5 RETURNING *`,
+      [tai_khoan, mat_khau || null, role || 'admin', ghi_chu || null, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// DELETE /api/tai-khoan/accounts/:id
+router.delete('/accounts/:id', auth, async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM it_accounts WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy' });
+    res.json({ message: 'Đã xóa' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// ==================== QUY TRÌNH LIÊN KẾT ====================
+
+// GET /api/tai-khoan/quy-trinh — lấy tất cả quy trình cho dropdown
+router.get('/quy-trinh', auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, description FROM quy_trinh ORDER BY title`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// POST /api/tai-khoan/link-quy-trinh — gắn quy trình vào hệ thống
+router.post('/link-quy-trinh', auth, async (req, res) => {
+  const { system_id, quy_trinh_id } = req.body;
+  if (!system_id || !quy_trinh_id) return res.status(400).json({ message: 'Thiếu thông tin' });
+  try {
+    await pool.query(
+      `INSERT INTO system_quy_trinh (system_id, quy_trinh_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [system_id, quy_trinh_id]
+    );
+    res.json({ message: 'Đã gắn quy trình' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// DELETE /api/tai-khoan/link-quy-trinh/:linkId — gỡ quy trình
+router.delete('/link-quy-trinh/:linkId', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM system_quy_trinh WHERE id = $1', [req.params.linkId]);
+    res.json({ message: 'Đã gỡ' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server' });
   }
 });
 
