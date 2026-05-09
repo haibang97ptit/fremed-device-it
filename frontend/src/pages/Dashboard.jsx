@@ -65,13 +65,13 @@ export default function Dashboard() {
           <h1 className="text-[18px] font-bold text-[#172b4d]">Dashboard</h1>
           <p className="text-[12px] text-[#6b778c] mt-0.5">Tổng quan hệ thống thiết bị IT — Fremed</p>
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <button className="btn-secondary text-[11.5px] py-[5px] gap-1.5">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="8" y1="5" x2="8" y2="11"/></svg>
             Xuất báo cáo
           </button>
           <button className="btn-primary text-[11.5px] py-[5px]">Làm mới</button>
-        </div>
+        </div> */}
       </div>
 
       {/* Stats row */}

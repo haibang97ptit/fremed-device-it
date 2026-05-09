@@ -10,7 +10,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./scripts:/scripts
     ports:
       - "5432:5432"
     networks:
@@ -59,7 +58,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://fremed:fremed@2025@postgres:5432/fremed_device
       JWT_SECRET: fremed_secret_key_2025
@@ -71,9 +70,6 @@ services:
         condition: service_healthy
     networks:
       - fremed_net
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
 
   frontend:
     build:
@@ -81,17 +77,12 @@ services:
       dockerfile: Dockerfile
     container_name: fremed_frontend
     restart: unless-stopped
-    environment:
-      VITE_API_URL: http://localhost:3000
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
       - backend
     networks:
       - fremed_net
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
   pgadmin:
     image: dpage/pgadmin4:latest

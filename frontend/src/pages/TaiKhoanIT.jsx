@@ -172,9 +172,6 @@ function SystemCard({ sys, onEditSystem, onDeleteSystem, onAddAccount, onEditAcc
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-[#172b4d]">{child.name}</span>
                       <span className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase" style={{ background: childInfo.color + '15', color: childInfo.color }}>{childInfo.label}</span>
-                      {child.quy_trinh?.length > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#eae6ff] text-[#6554c0] font-medium">{child.quy_trinh.length} quy trình</span>
-                      )}
                     </div>
                     {child.description && <p className="text-[10.5px] text-[#97a0af] mt-0.5">{child.description}</p>}
                   </div>
@@ -196,10 +193,6 @@ function SystemCard({ sys, onEditSystem, onDeleteSystem, onAddAccount, onEditAcc
                       <AccountRow key={acc.id} acc={acc} onEdit={onEditAccount} onDelete={onDeleteAccount} />
                     ))}
                   </div>
-                )}
-                {/* Quy trình con */}
-                {(child.quy_trinh?.length > 0 || true) && (
-                  <QuyTrinhSection items={child.quy_trinh || []} systemId={child.id} onUnlink={onUnlinkQT} onView={onViewQT} onAdd={onAddQT} />
                 )}
               </div>
             )

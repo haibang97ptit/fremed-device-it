@@ -1,14 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getDevices, createDevice, updateDevice, deleteDevice, getPhongban, getLoaimay, pingDevice as pingDeviceAPI } from '../api'
+import { getDevices, createDevice, updateDevice, deleteDevice, getPhongban, getLoaimay } from '../api'
+import api from '../api'
 import Modal from '../components/Modal'
 
-const EMPTY = { idmay: '', idban: '', name: '', service_tag: '', express_code: '', mac_address: '', ngay_mua: '', details: '', tinh_trang: '', ip_address: '' }
+const EMPTY = { idmay: '', idban: '', name: '', service_tag: '', express_code: '', mac_address: '', ngay_mua: '', details: '', tinh_trang: '' }
 
 function PingCell({ row, pingResults, handlePing }) {
   const r = pingResults[row.id]
-  if (!row.ip_address) return <span className="text-[#c1c7d0]">—</span>
+  if (!row.service_tag) return <span className="text-[#c1c7d0]">—</span>
   if (!r) return (
-    <button onClick={() => handlePing(row.id)}
+    <button onClick={() => handlePing(row)}
       className="text-[11px] font-semibold text-[#0052cc] hover:text-[#0747a6] hover:underline transition-colors">
       Ping
     </button>
@@ -19,9 +20,9 @@ function PingCell({ row, pingResults, handlePing }) {
     <div className="flex items-center gap-1.5">
       <span className="badge badge-green">
         <span className="w-1.5 h-1.5 rounded-full bg-[#36b37e]" />
-        {r.latency?.avg}ms
+        {r.resolved_ip || 'Online'}
       </span>
-      <button onClick={() => handlePing(row.id)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
+      <button onClick={() => handlePing(row)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 8a7 7 0 0112.9-3.8M15 8a7 7 0 01-12.9 3.8"/><path d="M14 1v3.2h-3.2M2 15v-3.2h3.2"/></svg>
       </button>
     </div>
@@ -30,9 +31,9 @@ function PingCell({ row, pingResults, handlePing }) {
     <div className="flex items-center gap-1.5">
       <span className="badge badge-red">
         <span className="w-1.5 h-1.5 rounded-full bg-[#ff5630]" />
-        Offline
+        Unknown
       </span>
-      <button onClick={() => handlePing(row.id)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
+      <button onClick={() => handlePing(row)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 8a7 7 0 0112.9-3.8M15 8a7 7 0 01-12.9 3.8"/><path d="M14 1v3.2h-3.2M2 15v-3.2h3.2"/></svg>
       </button>
     </div>
@@ -53,6 +54,11 @@ export default function Devices() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [pingResults, setPingResults] = useState({})
+  const [addingLoaimay, setAddingLoaimay] = useState(false)
+  const [newLoaimay, setNewLoaimay] = useState('')
+
+  // Reset inline input khi mở/đóng modal
+  useEffect(() => { setAddingLoaimay(false); setNewLoaimay('') }, [modal])
   const LIMIT = 50
 
   const load = useCallback(async () => {
@@ -73,8 +79,20 @@ export default function Devices() {
   async function handleSave() {
     setSaving(true)
     try {
-      if (modal === 'add') await createDevice(form)
-      else await updateDevice(form.id, form)
+      let finalForm = { ...form }
+
+      // Nếu đang nhập loại máy mới → tạo trước
+      if (addingLoaimay && newLoaimay.trim()) {
+        const res = await api.post('/lookup/loaimay', { name: newLoaimay.trim() })
+        const updated = await api.get('/lookup/loaimay')
+        setLoaimay(updated.data)
+        finalForm.idmay = String(res.data.id)
+        setAddingLoaimay(false)
+        setNewLoaimay('')
+      }
+
+      if (modal === 'add') await createDevice(finalForm)
+      else await updateDevice(finalForm.id, finalForm)
       setModal(null); load()
     } catch (e) { alert(e.response?.data?.message || 'Lỗi lưu') }
     finally { setSaving(false) }
@@ -85,13 +103,14 @@ export default function Devices() {
     await deleteDevice(id); load()
   }
 
-  async function handlePing(id) {
-    setPingResults(prev => ({ ...prev, [id]: { loading: true } }))
+  async function handlePing(row) {
+    if (!row.service_tag) return
+    setPingResults(prev => ({ ...prev, [row.id]: { loading: true } }))
     try {
-      const res = await pingDeviceAPI(id)
-      setPingResults(prev => ({ ...prev, [id]: { ...res.data, loading: false } }))
+      const res = await api.post('/ping/ip/check', { ip: `${row.service_tag}.fremed.com` })
+      setPingResults(prev => ({ ...prev, [row.id]: { ...res.data, loading: false } }))
     } catch (e) {
-      setPingResults(prev => ({ ...prev, [id]: { status: 'error', message: e.response?.data?.message || 'Lỗi', loading: false } }))
+      setPingResults(prev => ({ ...prev, [row.id]: { status: 'error', message: 'Lỗi ping', loading: false } }))
     }
   }
 
@@ -177,9 +196,6 @@ export default function Devices() {
               <th className="th">Device Name</th>
               {/* <th className="th">Manufacturer</th> */}
               <th className="th">Loại máy</th>
-              {/* <th className="th">OS Version</th> */}
-              {/* <th className="th">Battery %</th> */}
-              <th className="th">IP Address</th>
               <th className="th">Ping</th>
               <th className="th">Tình trạng</th>
               <th className="th">Phòng ban</th>
@@ -227,20 +243,6 @@ export default function Devices() {
                   </td>
                   {/* <td className="td text-[#344563] text-[12px]">{row.manufacturer || '—'}</td> */}
                   <td className="td text-[12px]">{row.loaimay_name || '—'}</td>
-                  {/* <td className="td">
-                    {row.os_version ? <span className="badge badge-gray">{row.os_version}</span> : <span className="text-[#c1c7d0]">—</span>}
-                  </td> */}
-                  {/* <td className="td">
-                    {batteryPct !== null ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-[#ebecf0] rounded-full h-[5px]">
-                          <div className="h-[5px] rounded-full" style={{ width: `${batteryPct}%`, background: batteryColor }} />
-                        </div>
-                        <span className="text-[11px] font-medium text-[#344563]">{batteryPct}%</span>
-                      </div>
-                    ) : <span className="text-[#c1c7d0]">—</span>}
-                  </td> */}
-                  <td className="td font-mono text-[11px] text-[#6b778c]">{row.ip_address || '—'}</td>
                   <td className="td"><PingCell row={row} pingResults={pingResults} handlePing={handlePing} /></td>
                   <td className="td">
                     {row.tinh_trang ? (
@@ -308,10 +310,39 @@ export default function Devices() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11.5px] font-semibold text-[#5e6c84] mb-1.5 uppercase tracking-wider">Loại máy</label>
-              <select className="input-field" value={form.idmay} onChange={e => setForm(f => ({ ...f, idmay: e.target.value }))}>
-                <option value="">Chọn loại máy</option>
-                {loaimay.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
+              {addingLoaimay ? (
+                <div className="flex gap-1.5">
+                  <input className="input-field flex-1" placeholder="Nhập tên loại máy mới..." autoFocus
+                    value={newLoaimay} onChange={e => setNewLoaimay(e.target.value)}
+                    onKeyDown={async e => {
+                      if (e.key === 'Enter' && newLoaimay.trim()) {
+                        try {
+                          const res = await api.post('/lookup/loaimay', { name: newLoaimay.trim() })
+                          const updated = await api.get('/lookup/loaimay')
+                          setLoaimay(updated.data)
+                          setForm(f => ({ ...f, idmay: String(res.data.id) }))
+                          setAddingLoaimay(false); setNewLoaimay('')
+                        } catch { alert('Lỗi tạo loại máy') }
+                      }
+                      if (e.key === 'Escape') { setAddingLoaimay(false); setNewLoaimay('') }
+                    }} />
+                  <button type="button" onClick={() => { setAddingLoaimay(false); setNewLoaimay('') }}
+                    className="btn-secondary px-2 flex-shrink-0" title="Hủy">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  <select className="input-field flex-1" value={form.idmay} onChange={e => setForm(f => ({ ...f, idmay: e.target.value }))}>
+                    <option value="">Chọn loại máy</option>
+                    {loaimay.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                  <button type="button" onClick={() => setAddingLoaimay(true)}
+                    className="btn-secondary px-2 flex-shrink-0" title="Thêm loại máy mới">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-[11.5px] font-semibold text-[#5e6c84] mb-1.5 uppercase tracking-wider">Phòng ban</label>
@@ -320,7 +351,7 @@ export default function Devices() {
                 {phongban.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            {[['name','Tên nhân viên'],['service_tag','Service Tag'],['express_code','Express Code'],['mac_address','MAC Address'],['ip_address','IP Address'],['tinh_trang','Tình trạng']].map(([key, label]) => (
+            {[['name','Tên nhân viên'],['service_tag','Service Tag'],['express_code','Express Code'],['mac_address','MAC Address'],['tinh_trang','Tình trạng']].map(([key, label]) => (
               <div key={key}>
                 <label className="block text-[11.5px] font-semibold text-[#5e6c84] mb-1.5 uppercase tracking-wider">{label}</label>
                 <input className="input-field" value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />

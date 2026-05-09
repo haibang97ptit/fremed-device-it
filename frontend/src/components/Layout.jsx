@@ -14,21 +14,21 @@ const SIDEBAR_NAV = [
   { to: '/ips', label: 'IP tĩnh', end: false,
     icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="8" cy="8" r="6"/><line x1="8" y1="2" x2="8" y2="14"/><path d="M2 8c1.5-2 3-3 6-3s4.5 1 6 3"/><path d="M2 8c1.5 2 3 3 6 3s4.5-1 6-3"/></svg>
   },
-  { to: '/quy-trinh', label: 'Quy trình IT', end: false,
-    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2h8l2 3-6 9-6-9 2-3z"/></svg>
-  },
-  { to: '/tai-khoan', label: 'Tài khoản IT', end: false,
-    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="12" height="8" rx="1.5"/><path d="M5 5V4a3 3 0 016 0v1"/><circle cx="8" cy="9.5" r="1.2"/><line x1="8" y1="10.7" x2="8" y2="11.5"/></svg>
-  },
-  { to: '/phieu-de-nghi', label: 'Phiếu đề nghị', end: false,
-    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v4h4"/><line x1="5" y1="9" x2="11" y2="9"/><line x1="5" y1="11.5" x2="9" y2="11.5"/></svg>
-  },
-  { to: '/action-items', label: 'Action Items', end: false,
-    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h12M2 8h12M2 13h8"/><circle cx="13" cy="13" r="2"/><path d="M12 13l1 1 2-2" strokeWidth="1.5"/></svg>
-  },
-  { to: '/it-sop', label: 'IT SOP', end: false,
-    icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6l-4-4z"/><path d="M9 2v4h4"/><path d="M5 9h6M5 11.5h4"/></svg>
-  },
+  // { to: '/quy-trinh', label: 'Quy trình IT', end: false,
+  //   icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2h8l2 3-6 9-6-9 2-3z"/></svg>
+  // },
+  // { to: '/tai-khoan', label: 'Tài khoản IT', end: false,
+  //   icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="12" height="8" rx="1.5"/><path d="M5 5V4a3 3 0 016 0v1"/><circle cx="8" cy="9.5" r="1.2"/><line x1="8" y1="10.7" x2="8" y2="11.5"/></svg>
+  // },
+  // { to: '/phieu-de-nghi', label: 'Phiếu đề nghị', end: false,
+  //   icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v4h4"/><line x1="5" y1="9" x2="11" y2="9"/><line x1="5" y1="11.5" x2="9" y2="11.5"/></svg>
+  // },
+  // { to: '/action-items', label: 'Action Items', end: false,
+  //   icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h12M2 8h12M2 13h8"/><circle cx="13" cy="13" r="2"/><path d="M12 13l1 1 2-2" strokeWidth="1.5"/></svg>
+  // },
+  // { to: '/it-sop', label: 'IT SOP', end: false,
+  //   icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6l-4-4z"/><path d="M9 2v4h4"/><path d="M5 9h6M5 11.5h4"/></svg>
+  // },
 ]
 
 // Chỉ hiện các tab này trên header
