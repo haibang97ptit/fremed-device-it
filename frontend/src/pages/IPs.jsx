@@ -119,8 +119,8 @@ export default function IPs() {
                     ) : pr ? (
                       <PingBadge status={pr.status} latency={pr.latency ? Math.round(pr.latency) : null} />
                     ) : row.ip ? (
-                      <button onClick={() => handlePingOne(row)} className="text-[10px] px-1.5 py-0.5 rounded text-[#6b778c] hover:bg-[#ebecf0] transition-colors" title="Ping">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1"/></svg>
+                      <button onClick={() => handlePingOne(row)} className="text-[11px] font-semibold text-[#0052cc] hover:text-[#0747a6] hover:underline transition-colors">
+                        Ping
                       </button>
                     ) : (
                       <span className="text-[#c1c7d0]">—</span>

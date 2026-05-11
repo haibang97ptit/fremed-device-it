@@ -20,7 +20,6 @@ function PingCell({ row, pingResults, handlePing }) {
     <div className="flex items-center gap-1.5">
       <span className="badge badge-green">
         <span className="w-1.5 h-1.5 rounded-full bg-[#36b37e]" />
-        {console.log('resolved_ip =', r.resolved_ip)}
         {r.resolved_ip || 'Online'}
       </span>
       <button onClick={() => handlePing(row)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
@@ -197,9 +196,11 @@ export default function Devices() {
               <th className="th">Device Name</th>
               {/* <th className="th">Manufacturer</th> */}
               <th className="th">Loại máy</th>
+              <th className="th">Service Tag</th>
               <th className="th">Ping</th>
               <th className="th">Tình trạng</th>
               <th className="th">Phòng ban</th>
+              <th className="th">Cập nhật</th>
               <th className="th w-16"></th>
             </tr>
           </thead>
@@ -244,6 +245,7 @@ export default function Devices() {
                   </td>
                   {/* <td className="td text-[#344563] text-[12px]">{row.manufacturer || '—'}</td> */}
                   <td className="td text-[12px]">{row.loaimay_name || '—'}</td>
+                  <td className="td font-mono text-[11px] text-[#6b778c]">{row.service_tag || '—'}</td>
                   <td className="td"><PingCell row={row} pingResults={pingResults} handlePing={handlePing} /></td>
                   <td className="td">
                     {row.tinh_trang ? (
@@ -254,6 +256,9 @@ export default function Devices() {
                   </td>
                   <td className="td">
                     {row.phongban_name ? <span className="badge badge-blue">{row.phongban_name}</span> : <span className="text-[#c1c7d0]">—</span>}
+                  </td>
+                  <td className="td text-[11px] text-[#6b778c]">
+                    {row.updated_at ? new Date(row.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                   </td>
                   <td className="td">
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
