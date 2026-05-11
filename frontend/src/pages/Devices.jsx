@@ -20,6 +20,7 @@ function PingCell({ row, pingResults, handlePing }) {
     <div className="flex items-center gap-1.5">
       <span className="badge badge-green">
         <span className="w-1.5 h-1.5 rounded-full bg-[#36b37e]" />
+        {console.log('resolved_ip =', r.resolved_ip)}
         {r.resolved_ip || 'Online'}
       </span>
       <button onClick={() => handlePing(row)} className="text-[#97a0af] hover:text-[#0052cc] transition-colors">
