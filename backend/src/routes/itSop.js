@@ -18,6 +18,7 @@ router.get('/', auth, async (req, res) => {
         v.FileName,
         v.Status,
         v.EffectiveDate,
+        v.ExpirationDate,
         v.DocumentStatus,
         l.FilePath AS PDFPath
       FROM DMS.AizantIT_DocumentMaster m

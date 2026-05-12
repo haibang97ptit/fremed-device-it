@@ -118,13 +118,14 @@ export default function ITSop() {
                   <th className="text-center py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">Phiên bản</th>
                   <th className="text-center py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">Trạng thái</th>
                   <th className="text-left py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">Ngày hiệu lực</th>
+                  <th className="text-left py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">Ngày hết hạn</th>
                   <th className="text-left py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">Cập nhật</th>
                   <th className="text-center py-2.5 px-3 text-[11px] font-semibold text-[#6b778c] uppercase tracking-wide">PDF</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-10 text-[#97a0af]">Không tìm thấy tài liệu nào</td></tr>
+                  <tr><td colSpan={9} className="text-center py-10 text-[#97a0af]">Không tìm thấy tài liệu nào</td></tr>
                 ) : filtered.map((row, i) => (
                   <tr key={row.VersionID || row.DocumentID + '-' + i} className="border-b border-[#f4f5f7] hover:bg-[#fafbfc] transition-colors">
                     <td className="py-2.5 px-3 text-[#97a0af]">{i + 1}</td>
@@ -146,6 +147,7 @@ export default function ITSop() {
                       <StatusBadge status={row.Status || row.DocumentStatus} />
                     </td>
                     <td className="py-2.5 px-3 text-[#6b778c]">{formatDate(row.EffectiveDate)}</td>
+                    <td className="py-2.5 px-3 text-[#6b778c]">{formatDate(row.ExpirationDate)}</td>
                     <td className="py-2.5 px-3 text-[#6b778c]">{formatDate(row.LastmodifiedDate)}</td>
                     <td className="py-2.5 px-3 text-center">
                       {row.PDFPath ? (
