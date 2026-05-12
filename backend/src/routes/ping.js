@@ -2,21 +2,32 @@ const router      = require('express').Router();
 const auth        = require('../middleware/auth');
 const pingService = require('../services/pingService');
 const ping        = require('ping');
+const dns         = require('dns');
+const { promisify } = require('util');
+const dnsLookup   = promisify(dns.lookup);
 
 // POST /api/ping/ip/check — ping 1 IP trực tiếp
 router.post('/ip/check', auth, async (req, res) => {
   const { ip } = req.body;
   if (!ip) return res.status(400).json({ message: 'Thiếu IP' });
   try {
+    // Resolve hostname → IP
+    let resolved_ip = null;
+    try {
+      const lookup = await dnsLookup(ip);
+      resolved_ip = lookup.address;
+    } catch {}
+
     const result = await ping.promise.probe(ip, { timeout: 3, extra: ['-c', '1'] });
     res.json({
       ip,
+      resolved_ip: resolved_ip || null,
       alive: result.alive,
       status: result.alive ? 'online' : 'offline',
       latency: result.alive ? result.avg : null,
     });
   } catch {
-    res.json({ ip, alive: false, status: 'offline', latency: null });
+    res.json({ ip, alive: false, status: 'offline', latency: null, resolved_ip: null });
   }
 });
 
