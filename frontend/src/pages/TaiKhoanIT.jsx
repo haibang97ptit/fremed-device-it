@@ -107,7 +107,7 @@ function QuyTrinhSection({ items, systemId, onUnlink, onView, onAdd }) {
 
 // ========== SYSTEM CARD ==========
 function SystemCard({ sys, onEditSystem, onDeleteSystem, onAddAccount, onEditAccount, onDeleteAccount, onAddChildSystem, onUnlinkQT, onViewQT, onAddQT }) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
   const info = getTypeInfo(sys.type)
   const totalAccounts = sys.accounts.length + sys.children.reduce((sum, c) => sum + c.accounts.length, 0)
 
