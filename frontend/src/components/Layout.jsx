@@ -38,6 +38,7 @@ const HEADER_TABS = [
   { to: '/phieu-de-nghi', label: 'Phiếu đề nghị', end: false },
   { to: '/action-items', label: 'Action Items', end: false },
   { to: '/it-sop', label: 'IT SOP', end: false },
+  { to: '/tasks', label: 'Tasks', end: false },
 ]
 
 export default function Layout() {

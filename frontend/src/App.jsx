@@ -14,6 +14,7 @@ const TaiKhoanIT = lazy(() => import('./pages/TaiKhoanIT'))
 const PhieuDeNghi = lazy(() => import('./pages/PhieuDeNghi'))
 const ActionItems = lazy(() => import('./pages/ActionItems'))
 const ITSop = lazy(() => import('./pages/ITSop'))
+const Tasks = lazy(() => import('./pages/Tasks'))
 
 function PrivateRoute({ children }) {
   const { token } = useAuth()
@@ -43,6 +44,7 @@ export default function App() {
               <Route path="phieu-de-nghi" element={<PhieuDeNghi />} />
               <Route path="action-items" element={<ActionItems />} />
               <Route path="it-sop" element={<ITSop />} />
+              <Route path="tasks" element={<Tasks />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
