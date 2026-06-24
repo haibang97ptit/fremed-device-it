@@ -20,7 +20,7 @@ const TYPES = [
   },
   {
     value: 'qa',
-    label: 'QA',
+    label: 'SOP',
     headerBg: 'linear-gradient(135deg, #FAECE7, #FDF4F0)',
     accent: '#D85A30',
     accentLight: '#FAECE7',
@@ -29,7 +29,14 @@ const TYPES = [
   },
 ]
 
-const EMPTY_TASK = { title: '', description: '', task_type: 'daily', status: 'todo', task_date: new Date().toISOString().slice(0, 10) }
+const EMPTY_TASK = {
+  title: '',
+  description: '',
+  task_type: 'daily',
+  status: 'todo',
+  task_date: new Date().toISOString().slice(0, 10),
+  deadline: '',
+}
 
 function getTypeStyle(type) {
   return TYPES.find(t => t.value === type) || TYPES[0]
@@ -40,9 +47,38 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
 }
 
+// Tính số ngày còn lại + style badge
+function getDeadlineBadge(deadline) {
+  if (!deadline) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const d = new Date(deadline)
+  d.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((d - today) / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) {
+    return { text: `Trễ ${Math.abs(diffDays)} ngày`, bg: '#FFEBE6', color: '#BF2600', border: '#FF8F73' }
+  }
+  if (diffDays === 0) {
+    return { text: 'Hôm nay', bg: '#FFF4E6', color: '#974F0C', border: '#FFAB00' }
+  }
+  if (diffDays === 1) {
+    return { text: 'Ngày mai', bg: '#FFF4E6', color: '#974F0C', border: '#FFAB00' }
+  }
+  if (diffDays <= 3) {
+    return { text: `Còn ${diffDays} ngày`, bg: '#FFFAE6', color: '#7F5F01', border: '#FFC400' }
+  }
+  if (diffDays <= 7) {
+    return { text: `Còn ${diffDays} ngày`, bg: '#E6F1FB', color: '#0C447C', border: '#4C9AFF' }
+  }
+  return { text: `Còn ${diffDays} ngày`, bg: '#E1F5EE', color: '#085041', border: '#57D9A3' }
+}
+
 function TaskCard({ task, onClick }) {
   const t = getTypeStyle(task.task_type)
   const isDone = task.status === 'done'
+  const deadlineBadge = !isDone ? getDeadlineBadge(task.deadline) : null
+
   return (
     <div
       onClick={onClick}
@@ -91,6 +127,26 @@ function TaskCard({ task, onClick }) {
           {task.description}
         </p>
       )}
+
+      {deadlineBadge && (
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          background: deadlineBadge.bg,
+          color: deadlineBadge.color,
+          border: `1px solid ${deadlineBadge.border}`,
+          padding: '2px 8px',
+          borderRadius: 10,
+          fontSize: 10.5,
+          fontWeight: 600,
+          marginBottom: 8,
+        }}>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+          {deadlineBadge.text}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted, #6b778c)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {isDone ? (
@@ -99,6 +155,12 @@ function TaskCard({ task, onClick }) {
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6h12M6 1.5v2.5M10 1.5v2.5"/></svg>
           )}
           <span>{formatDate(task.task_date)}</span>
+          {task.deadline && (
+            <>
+              <span style={{ margin: '0 2px' }}>→</span>
+              <span style={{ fontWeight: 500 }}>{formatDate(task.deadline)}</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -120,7 +182,6 @@ function KanbanBoard({ type, tasks, onEdit }) {
       overflow: 'hidden',
       marginBottom: 20,
     }}>
-      {/* Section header */}
       <div style={{
         background: type.headerBg,
         padding: '14px 18px',
@@ -160,7 +221,6 @@ function KanbanBoard({ type, tasks, onEdit }) {
         </div>
       </div>
 
-      {/* 3 columns */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0 }}>
         {COLUMNS.map((col, i) => (
           <div key={col.key} style={{
@@ -233,6 +293,7 @@ export default function Tasks() {
       task_type: task.task_type,
       status: task.status,
       task_date: task.task_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      deadline: task.deadline?.slice(0, 10) || '',
     })
     setModal('edit')
   }
@@ -241,8 +302,9 @@ export default function Tasks() {
     if (!form.title.trim()) return
     setSaving(true)
     try {
-      if (modal === 'add') await api.post('/tasks', form)
-      else await api.put(`/tasks/${form.id}`, form)
+      const payload = { ...form, deadline: form.deadline || null }
+      if (modal === 'add') await api.post('/tasks', payload)
+      else await api.put(`/tasks/${form.id}`, payload)
       setModal(null); load()
     } catch (e) { alert(e.response?.data?.message || 'Lỗi lưu') }
     finally { setSaving(false) }
@@ -269,7 +331,7 @@ export default function Tasks() {
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary, #172b4d)', margin: 0 }}>Tasks</h1>
           <p style={{ fontSize: 12, color: 'var(--text-muted, #6b778c)', margin: '4px 0 0 0' }}>
-            <span style={{ color: '#0052cc', fontWeight: 600 }}>{dailyTasks.length}</span> Daily · <span style={{ color: '#D85A30', fontWeight: 600 }}>{qaTasks.length}</span> QA
+            <span style={{ color: '#0052cc', fontWeight: 600 }}>{dailyTasks.length}</span> Daily · <span style={{ color: '#D85A30', fontWeight: 600 }}>{qaTasks.length}</span> SOP
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -283,7 +345,7 @@ export default function Tasks() {
             {[
               { key: 'all', label: 'Tất cả', color: '#0052cc' },
               { key: 'daily', label: 'Daily', color: '#0052cc' },
-              { key: 'qa', label: 'QA', color: '#D85A30' },
+              { key: 'qa', label: 'SOP', color: '#D85A30' },
             ].map(f => (
               <button
                 key={f.key}
@@ -302,7 +364,7 @@ export default function Tasks() {
               >{f.label}</button>
             ))}
           </div>
-          <button className="btn-primary text-[11.5px] py-[5px]">
+          <button onClick={handleAdd} className="btn-primary text-[11.5px] py-[5px]">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
             Thêm task
           </button>
@@ -417,14 +479,27 @@ export default function Tasks() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-[11.5px] font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Ngày</label>
-              <input
-                type="date"
-                className="input-field"
-                value={form.task_date}
-                onChange={e => setForm(f => ({ ...f, task_date: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11.5px] font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Ngày bắt đầu</label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={form.task_date}
+                  onChange={e => setForm(f => ({ ...f, task_date: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11.5px] font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Deadline</label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={form.deadline}
+                  onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
+                  min={form.task_date}
+                />
+              </div>
             </div>
           </div>
 

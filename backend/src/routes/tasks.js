@@ -2,10 +2,10 @@ const router = require('express').Router();
 const pool   = require('../db/pool');
 const auth   = require('../middleware/auth');
 
-// GET /api/tasks — lấy tất cả task
+// GET /api/tasks
 router.get('/', auth, async (req, res) => {
   try {
-    const { type } = req.query; // optional filter
+    const { type } = req.query;
     let query = 'SELECT * FROM tasks';
     const params = [];
     if (type && (type === 'daily' || type === 'qa')) {
@@ -23,13 +23,13 @@ router.get('/', auth, async (req, res) => {
 
 // POST /api/tasks
 router.post('/', auth, async (req, res) => {
-  const { title, description, task_type, status, task_date } = req.body;
+  const { title, description, task_type, status, task_date, deadline } = req.body;
   if (!title) return res.status(400).json({ message: 'Thiếu tiêu đề' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO tasks (title, description, task_type, status, task_date)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [title, description || null, task_type || 'daily', status || 'todo', task_date || new Date()]
+      `INSERT INTO tasks (title, description, task_type, status, task_date, deadline)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [title, description || null, task_type || 'daily', status || 'todo', task_date || new Date(), deadline || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -40,12 +40,12 @@ router.post('/', auth, async (req, res) => {
 
 // PUT /api/tasks/:id
 router.put('/:id', auth, async (req, res) => {
-  const { title, description, task_type, status, task_date } = req.body;
+  const { title, description, task_type, status, task_date, deadline } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE tasks SET title=$1, description=$2, task_type=$3, status=$4, task_date=$5
-       WHERE id=$6 RETURNING *`,
-      [title, description || null, task_type, status, task_date, req.params.id]
+      `UPDATE tasks SET title=$1, description=$2, task_type=$3, status=$4, task_date=$5, deadline=$6
+       WHERE id=$7 RETURNING *`,
+      [title, description || null, task_type, status, task_date, deadline || null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy' });
     res.json(rows[0]);
@@ -55,7 +55,7 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// PATCH /api/tasks/:id/status — quick update status (drag & drop hoặc chuyển nhanh)
+// PATCH /api/tasks/:id/status
 router.patch('/:id/status', auth, async (req, res) => {
   const { status } = req.body;
   if (!['todo', 'doing', 'done'].includes(status)) {
